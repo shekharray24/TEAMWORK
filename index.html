@@ -34,8 +34,9 @@
     </style>
 
     <style>
-      .like-area{display:flex;flex-direction:column;align-items:center;gap:10px;padding:28px 16px 18px;background:#0c0a09;color:#fff;font-family:Mulish,sans-serif}
-      .like-button{display:inline-flex;align-items:center;gap:11px;border:1px solid #fb7185;border-radius:999px;padding:12px 22px;background:#1c1917;color:#fff;font-weight:800;cursor:pointer;transition:transform .2s,background .2s}
+      #particles-js{pointer-events:none!important}
+      .like-area{position:relative;z-index:5;display:flex;flex-direction:column;align-items:center;gap:10px;padding:28px 16px 18px;background:#0c0a09;color:#fff;font-family:Mulish,sans-serif}
+      .like-button{position:relative;z-index:6;pointer-events:auto;display:inline-flex;align-items:center;gap:11px;border:1px solid #fb7185;border-radius:999px;padding:12px 22px;background:#1c1917;color:#fff;font-weight:800;cursor:pointer;transition:transform .2s,background .2s}
       .like-button:hover{transform:translateY(-2px);background:#292524}
       .like-button:disabled{opacity:.65;cursor:wait}
       .like-button.liked{background:#881337;border-color:#fb7185}
