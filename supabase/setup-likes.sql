@@ -1,5 +1,5 @@
 -- Run this once in Supabase Dashboard -> SQL Editor.
--- Stores a single global TEAMWORK count and one salted visitor hash per IP.
+-- Stores a single global TEAMWORK count and one salted hash per browser ID.
 create table if not exists public.site_likes (
   id text primary key,
   count bigint not null default 0
