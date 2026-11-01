@@ -716,7 +716,13 @@
         const heart = button.querySelector('.like-heart');
         const status = document.getElementById('likeStatus');
         const storageKey = 'teamwork-liked-v1';
+        const visitorKey = 'teamwork-visitor-id-v1';
         const endpoint = '/.netlify/functions/likes';
+        let visitorId = localStorage.getItem(visitorKey);
+        if (!visitorId) {
+          visitorId = crypto.randomUUID();
+          localStorage.setItem(visitorKey, visitorId);
+        }
         let liked = localStorage.getItem(storageKey) === 'true';
         let count = 0;
         let busy = false;
@@ -751,7 +757,7 @@
             const response = await fetch(endpoint, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-              body: JSON.stringify({ action: 'like' })
+              body: JSON.stringify({ action: 'like', visitorId })
             });
             const data = await response.json();
             if (!response.ok) throw new Error(data.error || 'Like could not be saved.');
