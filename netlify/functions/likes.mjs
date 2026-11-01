@@ -2,9 +2,6 @@ const json = (body, status = 200) =>
   new Response(JSON.stringify(body), {
     status,
     headers: {
-      "Access-Control-Allow-Origin": "*",
-      "Access-Control-Allow-Headers": "Content-Type",
-      "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
       "Content-Type": "application/json",
       "Cache-Control": "no-store",
     },
@@ -19,24 +16,13 @@ async function hashVisitor(value, salt) {
 }
 
 export default async (request) => {
-  if (request.method === "OPTIONS") {
-    return new Response(null, {
-      status: 204,
-      headers: {
-        "Access-Control-Allow-Origin": "*",
-        "Access-Control-Allow-Headers": "Content-Type",
-        "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-      },
-    });
-  }
-
   if (request.method !== "GET" && request.method !== "POST") {
     return json({ error: "Method not allowed." }, 405);
   }
 
-  const supabaseUrl = Netlify.env.get("SUPABASE_URL");
-  const serviceKey = Netlify.env.get("SUPABASE_SERVICE_ROLE_KEY");
-  const hashSalt = Netlify.env.get("LIKE_HASH_SALT");
+  const supabaseUrl = process.env.SUPABASE_URL;
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const hashSalt = process.env.LIKE_HASH_SALT;
 
   if (!supabaseUrl || !serviceKey || !hashSalt) {
     return json({ error: "The like counter has not been configured yet." }, 503);
@@ -69,20 +55,13 @@ export default async (request) => {
     return json({ error: "Invalid request body." }, 400);
   }
 
-  if (body?.action !== "like") {
-    return json({ error: "Invalid action." }, 400);
+  if (body?.action !== "like" || typeof body.visitorId !== "string" ||
+      !/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(body.visitorId)) {
+    return json({ error: "Invalid visitor token." }, 400);
   }
 
-  // Netlify supplies the visitor IP. Only a salted one-way hash is sent to Supabase.
-  const ip =
-    request.headers.get("x-nf-client-connection-ip") ||
-    request.headers.get("x-forwarded-for")?.split(",")[0]?.trim();
-
-  if (!ip) {
-    return json({ error: "Unable to verify this visitor. Please try again." }, 400);
-  }
-
-  const voterHash = await hashVisitor(ip, hashSalt);
+  // Hash the random browser token with a server-only salt; no personal data is stored.
+  const voterHash = await hashVisitor(body.visitorId, hashSalt);
   const response = await fetch(
     `${supabaseUrl}/rest/v1/rpc/increment_teamwork_likes`,
     {
