@@ -48,5 +48,6 @@ end;
 $$;
 
 -- Only the server-side Netlify function (service role) may call the function.
-revoke all on function public.increment_teamwork_likes(text) from public;
+revoke all on function public.increment_teamwork_likes(text) from public, anon, authenticated;
 grant execute on function public.increment_teamwork_likes(text) to service_role;
+grant select on public.site_likes to service_role;
