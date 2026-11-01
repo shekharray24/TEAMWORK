@@ -33,6 +33,18 @@
         }
     </style>
 
+    <style>
+      .like-area{display:flex;flex-direction:column;align-items:center;gap:10px;padding:28px 16px 18px;background:#0c0a09;color:#fff;font-family:Mulish,sans-serif}
+      .like-button{display:inline-flex;align-items:center;gap:11px;border:1px solid #fb7185;border-radius:999px;padding:12px 22px;background:#1c1917;color:#fff;font-weight:800;cursor:pointer;transition:transform .2s,background .2s}
+      .like-button:hover{transform:translateY(-2px);background:#292524}
+      .like-button:disabled{opacity:.65;cursor:wait}
+      .like-button.liked{background:#881337;border-color:#fb7185}
+      .like-button .like-heart{font-size:21px;line-height:1}
+      .like-count{font-variant-numeric:tabular-nums;font-size:18px;font-weight:900;min-width:2ch}
+      .like-caption{font-size:12px;color:#d6d3d1;text-align:center}
+      .like-status{font-size:12px;color:#fda4af;text-align:center;min-height:16px}
+      @media(prefers-reduced-motion:no-preference){.like-button.liked .like-heart{animation:teamwork-like-pop .3s ease}@keyframes teamwork-like-pop{50%{transform:scale(1.45)}}}
+    </style>
 </head>
 <body>
     <div id="particles-js" class="particles-js absolute w-full h-full z-1"></div>
@@ -59,6 +71,16 @@
             </div>
         </div>    
     </nav>
+
+    <section class="like-area" aria-label="Support TEAMWORK">
+      <button id="likeButton" class="like-button" type="button" aria-pressed="false" disabled>
+        <span class="like-heart" aria-hidden="true">♡</span>
+        <span id="likeButtonText">Loading...</span>
+        <span id="likeCount" class="like-count" aria-live="polite">—</span>
+      </button>
+      <p class="like-caption">Enjoying TEAMWORK? Tap the heart to show your support.</p>
+      <p id="likeStatus" class="like-status" role="status" aria-live="polite"></p>
+    </section>
 
     <!--main section-->
     
@@ -685,7 +707,77 @@
         });
     </script>
 
-    
+
+    <script>
+      (() => {
+        const button = document.getElementById('likeButton');
+        const countNode = document.getElementById('likeCount');
+        const label = document.getElementById('likeButtonText');
+        const heart = button.querySelector('.like-heart');
+        const status = document.getElementById('likeStatus');
+        const storageKey = 'teamwork-liked-v1';
+        const endpoint = '/.netlify/functions/likes';
+        let liked = localStorage.getItem(storageKey) === 'true';
+        let count = 0;
+        let busy = false;
+
+        function render() {
+          countNode.textContent = count.toLocaleString();
+          button.classList.toggle('liked', liked);
+          button.setAttribute('aria-pressed', String(liked));
+          heart.textContent = liked ? '♥' : '♡';
+          label.textContent = liked ? 'Liked' : 'Like TEAMWORK';
+        }
+
+        async function refresh() {
+          const response = await fetch(endpoint, { headers: { 'Accept': 'application/json' } });
+          const data = await response.json();
+          if (!response.ok) throw new Error(data.error || 'Could not load likes.');
+          count = Number(data.count) || 0;
+          render();
+          button.disabled = false;
+        }
+
+        button.addEventListener('click', async () => {
+          if (busy) return;
+          if (liked) {
+            status.textContent = 'Thank you! You have already liked TEAMWORK.';
+            return;
+          }
+          busy = true;
+          button.disabled = true;
+          status.textContent = 'Saving your like…';
+          try {
+            const response = await fetch(endpoint, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+              body: JSON.stringify({ action: 'like' })
+            });
+            const data = await response.json();
+            if (!response.ok) throw new Error(data.error || 'Like could not be saved.');
+            count = Number(data.count) || count;
+            liked = true;
+            localStorage.setItem(storageKey, 'true');
+            render();
+            status.textContent = data.alreadyLiked
+              ? 'Your network has already supported TEAMWORK. Thank you! ❤️'
+              : 'Thanks for supporting TEAMWORK! ❤️';
+          } catch (error) {
+            status.textContent = error.message || 'Something went wrong. Please try again.';
+          } finally {
+            busy = false;
+            button.disabled = false;
+          }
+        });
+
+        refresh().catch((error) => {
+          countNode.textContent = '—';
+          status.textContent = error.message || 'Likes are temporarily unavailable.';
+          button.disabled = true;
+        });
+      })();
+    </script>
+
     
 </body>
 </html>
